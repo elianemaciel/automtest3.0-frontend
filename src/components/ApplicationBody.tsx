@@ -24,6 +24,7 @@ export default function ApplicationBody() {
     const [methods, setMethods] = useState<Method[]>([]);
     const [userStory, setUserStory] = useState('');
     const [directory, setDirectory] = useState('');
+    const [selectedIA, setSelectedIA] = useState('gemini');
     //     {
     //         identifier: '1',
     //         name: 'isMinorAge',
@@ -305,11 +306,11 @@ export default function ApplicationBody() {
                     selectedMenuOption == MenuButton.ABOUT ?
                         <AboutPage />
                     : selectedMenuOption == MenuButton.USER_STORY ?
-                        <UserStoryContent userStory={userStory} setUserStory={setUserStory} setMethods={setMethods} showMethodsListContent={() => selectButton(MenuButton.METHOD_INFO)} />
+                        <UserStoryContent userStory={userStory} setUserStory={setUserStory} selectedIA={selectedIA} setSelectedIA={setSelectedIA} setMethods={setMethods} showMethodsListContent={() => selectButton(MenuButton.METHOD_INFO)} />
                     : selectedMenuOption == MenuButton.METHOD_INFO ?
                         <InsertMethodsInfoContent methods={methods} setMethods={setMethods} showEquivClassesList={() => selectButton(MenuButton.EQUIVALENCE_CLASS)}/>
                     : selectedMenuOption == MenuButton.EQUIVALENCE_CLASS ?
-                        <EquivalenceClassesContent methods={methods} setMethods={setMethods} showGenerateTests={() => selectButton(MenuButton.GENERATE_TEST)}/>
+                        <EquivalenceClassesContent methods={methods} setMethods={setMethods} selectedIA={selectedIA} showGenerateTests={() => selectButton(MenuButton.GENERATE_TEST)}/>
                     : <GenerateTestsContent directory={directory} setDirectory={setDirectory} methods={methods}/>
                 }
             </div>

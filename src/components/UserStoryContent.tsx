@@ -3,6 +3,7 @@ import {
   RadioButton,
   RadioGroup,
   Stack,
+  Text1,
   Text3,
   Text5,
 } from '@telefonica/mistica';
@@ -17,12 +18,16 @@ export default function UserStoryContent(props: {
   showMethodsListContent: any;
   userStory: string;
   setUserStory: any;
+  selectedIA: string;
+  setSelectedIA: any;
 }) {
   const {
     setMethods,
     showMethodsListContent,
     userStory: initialUserStory,
     setUserStory: setParentUserStory,
+    selectedIA,
+    setSelectedIA,
   } = props;
   const [userStory, setUserStory] = useState(initialUserStory);
   const [language, setLanguage] = useState('pt');
@@ -52,38 +57,36 @@ export default function UserStoryContent(props: {
     return isValid;
   }
 
-  function generateMethods(story: string, selectedLanguage: string) {
+  function generateMethods(userStory: string, language: string) {
+    console.log('Generating methods...');
+
     axios
-      .post(
-        `${API_BASE_URL}/api/process_user_story`,
-        JSON.stringify({ lang: selectedLanguage, userStory: story }),
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      )
+      .post(`${API_BASE_URL}/api/process_user_story`, {
+        lang: language,
+        userStory,
+        selectedIA,
+      })
       .then((response) => {
+        console.log('response=', response.data);
+
         const convertedMethods = response.data.map((item: any) => ({
           identifier: uuidv1(),
           name: item.nome,
           className: item.nomeClasse,
           returnType: item.tipoRetorno,
           equivClasses: [],
-          parameters: item.parametros.map((p: any) => {
-            return { identifier: uuidv1(), name: p.nome, type: p.tipo };
-          }),
+          parameters: item.parametros.map((p: any) => ({
+            identifier: uuidv1(),
+            name: p.nome,
+            type: p.tipo,
+          })),
         }));
 
-        // valida metodos
-        // setMethods aqui
         setMethods(convertedMethods);
         setIsLoading(false);
         showMethodsListContent();
-        return undefined;
       })
       .catch((error) => {
-        // Handle errors
         setIsLoading(false);
         setShowError(true);
         setErrorMessage(
@@ -91,13 +94,19 @@ export default function UserStoryContent(props: {
             error.response?.data ? error.response.data : error.message
           }`,
         );
-        return undefined;
+        console.error('Error fetching data:', error);
       });
   }
 
-  function renderContent() {
-    if (isLoading) {
-      return (
+  return (
+    <div style={{ width: '100%', color: 'white' }}>
+      <ValidationErrorSnackbar
+        open={showValidationError}
+        message={validationErrorMsg}
+        changeOpenState={() => setShowValidationError(!showValidationError)}
+      />
+
+      {isLoading ? (
         <div
           style={{
             width: '100%',
@@ -109,11 +118,7 @@ export default function UserStoryContent(props: {
         >
           <CircularProgress />
         </div>
-      );
-    }
-
-    if (showError) {
-      return (
+      ) : showError ? (
         <div
           style={{
             width: '100%',
@@ -142,101 +147,135 @@ export default function UserStoryContent(props: {
             </Button>
           </div>
         </div>
-      );
-    }
-
-    return (
-      <Stack space={24}>
-        <Text5 color="black">
-          Paste below the User Story you want to convert:
-        </Text5>
-        <textarea
-          id="multilineTextInput"
-          value={userStory}
-          onChange={(event) => {
-            setUserStory(event.target.value);
-          }}
-          rows={24}
-          cols={81}
-          style={{
-            borderRadius: '5px',
-            color: 'black',
-            fontFamily: 'inherit',
-            fontSize: '16px',
-            // backgroundColor: '#1b1f24'
-            backgroundColor: 'transparent',
-          }}
-        />
-        <div style={{ display: 'flex', margin: '24px', width: '100%' }}>
-          <RadioGroup
-            name="radio-group"
-            onChange={setLanguage}
-            defaultValue="pt"
-          >
-            <div style={{ marginInlineEnd: '24px' }}>
-              <RadioButton value="pt">
-                <Text3 regular color="black">
-                  Português
-                </Text3>
-              </RadioButton>
-            </div>
-            <div>
-              <RadioButton value="en">
-                <Text3 regular color="black">
-                  English
-                </Text3>
-              </RadioButton>
-            </div>
-          </RadioGroup>
-          <div
-            style={{
-              marginInlineStart: '24px',
-              width: '490px',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              alignItems: 'flex-end',
-              marginInlineEnd: '24px',
+      ) : (
+        <Stack space={24}>
+          <Text5 color="black">
+            Paste below the User Story you want to convert:
+          </Text5>
+          <textarea
+            id="multilineTextInput"
+            value={userStory}
+            onChange={(event) => {
+              setUserStory(event.target.value);
             }}
-          >
-            <Button
-              variant="outlined"
-              color="primary"
-              disableElevation
+            rows={24}
+            cols={81}
+            style={{
+              borderRadius: '5px',
+              color: 'black',
+              fontFamily: 'inherit',
+              fontSize: '16px',
+              // backgroundColor: '#1b1f24'
+              backgroundColor: 'transparent',
+            }}
+          />
+          <div style={{ display: 'flex', margin: '24px', width: '100%' }}>
+            <RadioGroup
+              name="radio-group"
+              onChange={setLanguage}
+              defaultValue="pt"
+            >
+              <div style={{ marginInlineEnd: '24px' }}>
+                <RadioButton value="pt">
+                  <Text3 regular color="black">
+                    Português
+                  </Text3>
+                </RadioButton>
+              </div>
+              <div>
+                <RadioButton value="en">
+                  <Text3 regular color="black">
+                    English
+                  </Text3>
+                </RadioButton>
+              </div>
+            </RadioGroup>
+
+            <div
               style={{
-                width: 150,
-                // backgroundColor: '#2d516f',
-                padding: '10px',
-                //     display: 'flex',
-                //     justifyContent: 'center',
-                //     alignItems: 'center',
-                //     minHeight: '80px',
-                //     fontWeight: 'bold',
-                // color: 'white',
-                //    // backgroundColor: buttonState.isCurrentlyActive ? selectedButtonColor : unselectedButtonColor
-              }}
-              onClick={() => {
-                if (validateUserStory()) {
-                  setIsLoading(true);
-                  generateMethods(userStory, language);
-                }
+                marginInlineStart: '24px',
+                width: '490px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-end',
+                marginInlineEnd: '24px',
               }}
             >
-              Submit Story
-            </Button>
-          </div>
-        </div>
-      </Stack>
-    );
-  }
+              <RadioGroup
+                name="radio-ia"
+                onChange={setSelectedIA}
+                defaultValue={selectedIA}
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, auto)',
+                    columnGap: '8px',
+                    rowGap: '8px',
+                    alignItems: 'center',
+                    marginBottom: '14px',
+                  }}
+                >
+                  <RadioButton value="gemini">
+                    <Text1 regular color="black">
+                      Gemini
+                    </Text1>
+                  </RadioButton>
+                  <RadioButton value="gpt">
+                    <Text1 regular color="black">
+                      ChatGPT
+                    </Text1>
+                  </RadioButton>
+                  <RadioButton value="llama">
+                    <Text1 regular color="black">
+                      LLaMA
+                    </Text1>
+                  </RadioButton>
+                  <RadioButton value="deepseek">
+                    <Text1 regular color="black">
+                      DeepSeek
+                    </Text1>
+                  </RadioButton>
+                  <RadioButton value="groq">
+                    <Text1 regular color="black">
+                      Groq
+                    </Text1>
+                  </RadioButton>
+                </div>
+              </RadioGroup>
 
-  return (
-    <div style={{ width: '100%', color: 'white' }}>
-      <ValidationErrorSnackbar
-        open={showValidationError}
-        message={validationErrorMsg}
-        changeOpenState={() => setShowValidationError(!showValidationError)}
-      />
-      {renderContent()}
+              <Button
+                variant="outlined"
+                color="primary"
+                disableElevation
+                style={{
+                  width: 80,
+                  // backgroundColor: '#2d516f',
+                  padding: '10px',
+                  marginBottom: '0px',
+                  //     display: 'flex',
+                  //     justifyContent: 'center',
+                  //     alignItems: 'center',
+                  //     minHeight: '80px',
+                  //     fontWeight: 'bold',
+                  // color: 'white',
+                  //    // backgroundColor: buttonState.isCurrentlyActive ? selectedButtonColor : unselectedButtonColor
+                }}
+                onClick={() => {
+                  if (validateUserStory()) {
+                    setIsLoading(true);
+                    generateMethods(userStory, language);
+                  } else {
+                    // alert("Pr");
+                  }
+                }}
+              >
+                Submit Story
+              </Button>
+            </div>
+          </div>
+        </Stack>
+      )}
     </div>
   );
 }

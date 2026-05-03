@@ -1,7 +1,7 @@
 import { Box, Button, FormControl, Grid, InputLabel, MenuItem, Select } from "@mui/material"
 import { Text3} from "@telefonica/mistica"
 import { buildTextField } from "../../CustomComponents"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DataRange } from "../../../models/DataRange"
 import { StringDataRangePiece, StringRangePieceType } from "../../../models/StringDataRange"
 import { v1 as uuidv1 } from 'uuid';
@@ -10,6 +10,10 @@ import { v1 as uuidv1 } from 'uuid';
 export function StringRangeComponent(props: {range: DataRange, setRange: any, addEmptyStringRange: any, onRemove: any, label?: any}) {
 
     const [pieces, setPieces] = useState(getRangeData(props.range).pieces);
+
+    useEffect(() => {
+        setPieces(getRangeData(props.range).pieces);
+    }, [props.range.v1, props.range.v2])
 
     function updatePieces(data: any) {
         console.log('updatePieces.data', data)
@@ -196,4 +200,3 @@ export function StringRangePiece(props: { onRemove: any, piece: StringDataRangeP
         </div>
     )
 }
-

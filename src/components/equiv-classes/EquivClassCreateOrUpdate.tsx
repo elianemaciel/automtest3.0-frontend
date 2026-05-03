@@ -40,11 +40,17 @@ type AiEquivalenceAttribute = {
   classes?: AiEquivalenceClass[];
 };
 
+type AiEquivalenceResponse = {
+  attributes?: AiEquivalenceAttribute[];
+  classes?: AiEquivalenceAttribute[];
+};
+
 export default function EquivClassCreateOrUpdate(props: {
   methodsAvaliable: Method[];
   isCreate: boolean;
   setMethods: any;
   showEquivClassList: any;
+  selectedIA: string;
   methodIndex?: number | undefined;
   equivClass?: EquivalenceClass | undefined;
 }) {
@@ -53,6 +59,7 @@ export default function EquivClassCreateOrUpdate(props: {
     isCreate,
     setMethods,
     showEquivClassList,
+    selectedIA,
     methodIndex,
     equivClass,
   } = props;
@@ -122,6 +129,22 @@ export default function EquivClassCreateOrUpdate(props: {
   function extractJsonFromAiResponse(
     responseData: any,
   ): AiEquivalenceAttribute[] {
+    if (Array.isArray(responseData)) {
+      return responseData;
+    }
+
+    if (responseData?.attribute) {
+      return [responseData];
+    }
+
+    if (responseData?.attributes && Array.isArray(responseData.attributes)) {
+      return responseData.attributes;
+    }
+
+    if (responseData?.classes && Array.isArray(responseData.classes)) {
+      return responseData.classes;
+    }
+
     let rawData = '';
 
     if (typeof responseData === 'string') {
@@ -134,9 +157,27 @@ export default function EquivClassCreateOrUpdate(props: {
       .replace(/```json/g, '')
       .replace(/```/g, '')
       .trim();
-    const parsed = JSON.parse(jsonText);
+    const parsed = JSON.parse(jsonText) as
+      | AiEquivalenceAttribute[]
+      | AiEquivalenceResponse;
 
-    return Array.isArray(parsed) ? parsed : [];
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    if ('attribute' in parsed) {
+      return [parsed as AiEquivalenceAttribute];
+    }
+
+    if (parsed.attributes && Array.isArray(parsed.attributes)) {
+      return parsed.attributes;
+    }
+
+    if (parsed.classes && Array.isArray(parsed.classes)) {
+      return parsed.classes;
+    }
+
+    return [];
   }
 
   function getFirstGeneratedClass(attribute?: AiEquivalenceAttribute) {
@@ -152,6 +193,25 @@ export default function EquivClassCreateOrUpdate(props: {
     return range.match(/-?\d+(\.\d+)?/g) || [];
   }
 
+  function normalizeAiAttributeName(value?: string) {
+    return (value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  function formatGeneratedDate(range: string) {
+    const trimmedRange = range.trim();
+    const isoDateMatch = trimmedRange.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (isoDateMatch) {
+      return `${isoDateMatch[3]}-${isoDateMatch[2]}-${isoDateMatch[1]}`;
+    }
+
+    return trimmedRange;
+  }
+
   function formatGeneratedRangeByType(
     range: string,
     type?: string,
@@ -165,6 +225,16 @@ export default function EquivClassCreateOrUpdate(props: {
         param_id: paramId,
         v1: lowerRange.includes('false') ? 'false' : 'true',
         v2: '',
+        v3: '',
+      };
+    }
+
+    if (normalizedType === 'date') {
+      const formattedDate = formatGeneratedDate(range);
+      return {
+        param_id: paramId,
+        v1: formattedDate,
+        v2: formattedDate,
         v3: '',
       };
     }
@@ -199,10 +269,11 @@ export default function EquivClassCreateOrUpdate(props: {
 
     if (normalizedType === 'string') {
       const cleanedRange = range.replace(/[[\]]/g, '').trim() || 'text';
+      const length = Math.max(cleanedRange.length, 1);
       return {
         param_id: paramId,
         v1: `[${cleanedRange}]`,
-        v2: `[1~${Math.max(cleanedRange.length, 1)}]`,
+        v2: `[${length}~${length}]`,
         v3: '',
       };
     }
@@ -220,7 +291,9 @@ export default function EquivClassCreateOrUpdate(props: {
   ) {
     const generatedRanges = currentMethod.parameters.map((param) => {
       const generatedAttribute = generatedAttributes.find(
-        (attribute) => attribute.attribute === param.name,
+        (attribute) =>
+          normalizeAiAttributeName(attribute.attribute) ===
+          normalizeAiAttributeName(param.name),
       );
       const generatedClass = getFirstGeneratedClass(generatedAttribute);
 
@@ -256,7 +329,7 @@ export default function EquivClassCreateOrUpdate(props: {
         `${API_BASE_URL}/api/process_class_equivalence`,
         JSON.stringify({
           lang: 'pt',
-          selectedIA: 'gpt',
+          selectedIA,
           methods: [currentMethod],
         }),
         {
