@@ -3,48 +3,116 @@ import { useState } from 'react';
 import { Button } from '@mui/material';
 import axios from 'axios';
 import { Method } from '../models/Method';
-import { buildTextField } from './CustomComponents';
 import ValidationErrorSnackbar from './ValidationErrorComponent';
 import { API_BASE_URL } from '../config/api';
 
 export default function GenerateTestsContent(props: {
   methods: Method[];
-  directory: string;
-  setDirectory: any;
+  selectedIA: string;
 }) {
-  const { methods, directory, setDirectory } = props;
-  // const [directory, setDirectory] = useState('');
+  const { methods, selectedIA } = props;
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [genResult, setGenResult] = useState('');
+  const [aiResult, setAiResult] = useState('');
+  const [isGeneratingFile, setIsGeneratingFile] = useState(false);
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
+
+  function downloadGeneratedFile(response: any) {
+    const contentDisposition = response.headers['content-disposition'] || '';
+    const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+    const filename = filenameMatch?.[1] || 'AutomTestGeneratedTests.zip';
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
 
   function validateAndSendReq() {
     setErrorMsg('');
     setShowError(false);
+    setGenResult('');
 
-    if (directory === '') {
-      setErrorMsg('Please, paste the directory where to save the files');
+    if (methods.length === 0) {
+      setErrorMsg('No methods available to generate tests');
       setShowError(true);
       return;
     }
 
+    setIsGeneratingFile(true);
+
+    // eslint-disable-next-line promise/catch-or-return
+    axios
+      .post(`${API_BASE_URL}/api/generate_tests`, JSON.stringify({ methods }), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: 'blob',
+      })
+      .then((response) => {
+        downloadGeneratedFile(response);
+        setGenResult('Arquivo de testes gerado com sucesso');
+        return undefined;
+      })
+      .catch((error) => {
+        setGenResult(
+          `An error occurred while generating tests: ${error.message}`,
+        );
+        return undefined;
+      })
+      .finally(() => {
+        setIsGeneratingFile(false);
+      });
+  }
+
+  function generateTestsWithAI() {
+    setErrorMsg('');
+    setShowError(false);
+    setGenResult('');
+    setAiResult('');
+
+    if (methods.length === 0) {
+      setGenResult('No methods available to generate tests');
+      return;
+    }
+
+    setIsGeneratingWithAI(true);
+
+    // eslint-disable-next-line promise/catch-or-return
     axios
       .post(
-        `${API_BASE_URL}/api/generate_tests`,
-        JSON.stringify({ directory, methods }),
+        `${API_BASE_URL}/api/generate_tests_llm`,
+        JSON.stringify({
+          lang: 'pt',
+          methods,
+          selectedIA,
+          targetLanguage: 'java',
+        }),
         {
           headers: {
             'Content-Type': 'application/json',
           },
         },
       )
-      .then(() => {
-        setGenResult('Testes gerados com sucesso');
+      .then((response) => {
+        setAiResult(JSON.stringify(response.data, null, 2));
+        setGenResult('Testes gerados com IA com sucesso');
         return undefined;
       })
-      .catch(() => {
-        setGenResult('An error occurred while generating tests');
+      .catch((error) => {
+        const message = error.response?.data?.error || error.message;
+        setGenResult(
+          `An error occurred while generating tests with AI: ${message}`,
+        );
         return undefined;
+      })
+      .finally(() => {
+        setIsGeneratingWithAI(false);
       });
   }
 
@@ -55,7 +123,7 @@ export default function GenerateTestsContent(props: {
         message={genResult}
         changeOpenState={() => setGenResult('')}
       />
-      Paste the location where to save the test files:
+      Generate test files from the selected methods and equivalence classes:
       <div
         style={{
           paddingRight: '0px',
@@ -67,15 +135,7 @@ export default function GenerateTestsContent(props: {
         }}
       >
         <div style={{ marginTop: '12px', marginRight: '16px', width: '100%' }}>
-          {buildTextField(
-            'Directory',
-            directory,
-            (v: any) => setDirectory(v.target.value),
-            false,
-            false,
-            showError,
-            errorMsg,
-          )}
+          {showError ? <div style={{ color: 'red' }}>{errorMsg}</div> : <div />}
         </div>
         <div>
           <Button
@@ -83,13 +143,45 @@ export default function GenerateTestsContent(props: {
             color="success"
             disableElevation
             onClick={validateAndSendReq}
+            disabled={isGeneratingFile}
             style={{ height: '55px', marginTop: '0px' }}
           >
-            Generate tests
+            {isGeneratingFile ? 'Generating...' : 'Generate tests'}
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disableElevation
+            onClick={generateTestsWithAI}
+            disabled={isGeneratingWithAI}
+            style={{ height: '55px', marginTop: '12px' }}
+          >
+            {isGeneratingWithAI ? 'Generating...' : 'Generate with AI'}
           </Button>
           {showError ? <div style={{ height: '21px' }} /> : <div />}
         </div>
       </div>
+      {aiResult !== '' ? (
+        <pre
+          style={{
+            width: '690px',
+            maxHeight: '220px',
+            overflow: 'auto',
+            marginTop: '24px',
+            padding: '12px',
+            border: '1px solid #d1d5db',
+            borderRadius: '5px',
+            backgroundColor: '#f8fafc',
+            color: 'black',
+            fontSize: '12px',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {aiResult}
+        </pre>
+      ) : (
+        <div />
+      )}
     </div>
   );
 }
