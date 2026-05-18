@@ -226,19 +226,9 @@ export default function UserStoryContent(props: {
                       ChatGPT
                     </Text1>
                   </RadioButton>
-                  <RadioButton value="llama">
-                    <Text1 regular color="black">
-                      LLaMA
-                    </Text1>
-                  </RadioButton>
                   <RadioButton value="deepseek">
                     <Text1 regular color="black">
                       DeepSeek
-                    </Text1>
-                  </RadioButton>
-                  <RadioButton value="groq">
-                    <Text1 regular color="black">
-                      Groq
                     </Text1>
                   </RadioButton>
                 </div>

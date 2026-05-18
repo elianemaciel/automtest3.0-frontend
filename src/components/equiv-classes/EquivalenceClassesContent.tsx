@@ -11,7 +11,10 @@ export default function EquivalenceClassesContent(props: {methods: Method[], set
         props.setMethods((methods_: Method[]) => methods_.map(m_ => {
             console.log('m_', m_)
             if (m_ && m_.identifier == method_id) {
-                m_.equivClasses = m_.equivClasses.filter(eqc => eqc.identifier != eq_class_id)
+                return {
+                    ...m_,
+                    equivClasses: (m_.equivClasses || []).filter(eqc => eqc.identifier != eq_class_id)
+                }
             }
             return m_
         }));

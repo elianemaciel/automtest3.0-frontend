@@ -204,12 +204,17 @@ export default function EquivClassCreateOrUpdate(props: {
   function formatGeneratedDate(range: string) {
     const trimmedRange = range.trim();
     const isoDateMatch = trimmedRange.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const brDateMatch = trimmedRange.match(/^(\d{2})-(\d{2})-(\d{4})$/);
 
     if (isoDateMatch) {
       return `${isoDateMatch[3]}-${isoDateMatch[2]}-${isoDateMatch[1]}`;
     }
 
-    return trimmedRange;
+    if (brDateMatch) {
+      return trimmedRange;
+    }
+
+    return '01-01-2024';
   }
 
   function formatGeneratedRangeByType(
@@ -234,7 +239,7 @@ export default function EquivClassCreateOrUpdate(props: {
       return {
         param_id: paramId,
         v1: formattedDate,
-        v2: formattedDate,
+        v2: formattedDate === '01-01-2024' ? '31-12-2024' : formattedDate,
         v3: '',
       };
     }
@@ -732,16 +737,25 @@ export default function EquivClassCreateOrUpdate(props: {
                 setMethods((methods: Method[]) =>
                   methods.map((m) => {
                     if (m.name === selectedMethodName) {
+                      const equivClasses = m.equivClasses || [];
+
                       if (isCreate) {
-                        m.equivClasses.push(updatedEquivClass);
-                      } else {
-                        m.equivClasses = m.equivClasses.map((ec) =>
+                        return {
+                          ...m,
+                          equivClasses: [...equivClasses, updatedEquivClass],
+                        };
+                      }
+
+                      return {
+                        ...m,
+                        equivClasses: equivClasses.map((ec) =>
                           ec.identifier === updatedEquivClass.identifier
                             ? updatedEquivClass
                             : ec,
-                        );
-                      }
+                        ),
+                      };
                     }
+
                     return m;
                   }),
                 );

@@ -14,15 +14,26 @@ export default function GenerateTestsContent(props: {
   const [showError, setShowError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [genResult, setGenResult] = useState('');
-  const [aiResult, setAiResult] = useState('');
   const [isGeneratingFile, setIsGeneratingFile] = useState(false);
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
 
-  function downloadGeneratedFile(response: any) {
+  async function saveGeneratedFile(response: any) {
     const contentDisposition = response.headers['content-disposition'] || '';
     const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
     const filename = filenameMatch?.[1] || 'AutomTestGeneratedTests.zip';
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const blob =
+      response.data instanceof Blob ? response.data : new Blob([response.data]);
+
+    if (window.electron?.saveGeneratedFile) {
+      const result = await window.electron.saveGeneratedFile({
+        filename,
+        data: await blob.arrayBuffer(),
+      });
+
+      return !result.canceled;
+    }
+
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
 
     link.href = url;
@@ -31,6 +42,21 @@ export default function GenerateTestsContent(props: {
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+    return true;
+  }
+
+  async function getRequestErrorMessage(error: any) {
+    if (error.response?.data instanceof Blob) {
+      const text = await error.response.data.text();
+
+      try {
+        return JSON.parse(text).error || text;
+      } catch {
+        return text || error.message;
+      }
+    }
+
+    return error.response?.data?.error || error.message;
   }
 
   function validateAndSendReq() {
@@ -54,15 +80,18 @@ export default function GenerateTestsContent(props: {
         },
         responseType: 'blob',
       })
-      .then((response) => {
-        downloadGeneratedFile(response);
-        setGenResult('Arquivo de testes gerado com sucesso');
+      .then(async (response) => {
+        const saved = await saveGeneratedFile(response);
+        setGenResult(
+          saved
+            ? 'Arquivo de testes gerado com sucesso'
+            : 'Geração cancelada pelo usuário',
+        );
         return undefined;
       })
-      .catch((error) => {
-        setGenResult(
-          `An error occurred while generating tests: ${error.message}`,
-        );
+      .catch(async (error) => {
+        const message = await getRequestErrorMessage(error);
+        setGenResult(`An error occurred while generating tests: ${message}`);
         return undefined;
       })
       .finally(() => {
@@ -74,10 +103,26 @@ export default function GenerateTestsContent(props: {
     setErrorMsg('');
     setShowError(false);
     setGenResult('');
-    setAiResult('');
 
     if (methods.length === 0) {
       setGenResult('No methods available to generate tests');
+      return;
+    }
+
+    const methodsWithEquivalenceClasses = methods.map((method) => ({
+      ...method,
+      equivClasses: method.equivClasses || [],
+    }));
+    const equivalenceClasses = methodsWithEquivalenceClasses.flatMap((method) =>
+      method.equivClasses.map((equivClass) => ({
+        ...equivClass,
+        methodIdentifier: method.identifier,
+        methodName: method.name,
+      })),
+    );
+
+    if (equivalenceClasses.length === 0) {
+      setGenResult('Please provide at least one Equivalence Class');
       return;
     }
 
@@ -89,7 +134,8 @@ export default function GenerateTestsContent(props: {
         `${API_BASE_URL}/api/generate_tests_llm`,
         JSON.stringify({
           lang: 'pt',
-          methods,
+          methods: methodsWithEquivalenceClasses,
+          equivalenceClasses,
           selectedIA,
           targetLanguage: 'java',
         }),
@@ -97,15 +143,20 @@ export default function GenerateTestsContent(props: {
           headers: {
             'Content-Type': 'application/json',
           },
+          responseType: 'blob',
         },
       )
-      .then((response) => {
-        setAiResult(JSON.stringify(response.data, null, 2));
-        setGenResult('Testes gerados com IA com sucesso');
+      .then(async (response) => {
+        const saved = await saveGeneratedFile(response);
+        setGenResult(
+          saved
+            ? 'Arquivo de testes gerado com IA com sucesso'
+            : 'Geração cancelada pelo usuário',
+        );
         return undefined;
       })
-      .catch((error) => {
-        const message = error.response?.data?.error || error.message;
+      .catch(async (error) => {
+        const message = await getRequestErrorMessage(error);
         setGenResult(
           `An error occurred while generating tests with AI: ${message}`,
         );
@@ -161,27 +212,6 @@ export default function GenerateTestsContent(props: {
           {showError ? <div style={{ height: '21px' }} /> : <div />}
         </div>
       </div>
-      {aiResult !== '' ? (
-        <pre
-          style={{
-            width: '690px',
-            maxHeight: '220px',
-            overflow: 'auto',
-            marginTop: '24px',
-            padding: '12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '5px',
-            backgroundColor: '#f8fafc',
-            color: 'black',
-            fontSize: '12px',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {aiResult}
-        </pre>
-      ) : (
-        <div />
-      )}
     </div>
   );
 }
