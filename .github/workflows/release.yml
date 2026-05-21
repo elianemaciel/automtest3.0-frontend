@@ -58,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish release assets
+      - name: Build release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ${{ matrix.command }}
@@ -69,3 +69,8 @@ jobs:
           name: automtest-${{ matrix.name }}
           path: ${{ matrix.artifact }}
           if-no-files-found: warn
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
