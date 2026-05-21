@@ -49,10 +49,11 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Create .env
+        shell: bash
         env:
           AUTOMTEST_BACKEND_URL: ${{ secrets.AUTOMTEST_BACKEND_URL }}
         run: |
-          node -e "const fs=require('fs'); const env = `AUTOMTEST_BACKEND_URL=${process.env.AUTOMTEST_BACKEND_URL}\nNODE_ENV=production\n`; fs.writeFileSync('.env', env);"
+          node -e 'const fs = require("fs"); fs.writeFileSync(".env", `AUTOMTEST_BACKEND_URL=${process.env.AUTOMTEST_BACKEND_URL}\nNODE_ENV=production\n`);'
 
       - name: Install dependencies
         run: npm ci
