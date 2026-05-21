@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - "automtest-v*"
       - "frontend-v*"
   workflow_dispatch:
 
@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -45,6 +47,12 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: package-lock.json
+
+      - name: Create .env
+        env:
+          AUTOMTEST_BACKEND_URL: ${{ secrets.AUTOMTEST_BACKEND_URL }}
+        run: |
+          node -e "const fs=require('fs'); const env = `AUTOMTEST_BACKEND_URL=${process.env.AUTOMTEST_BACKEND_URL}\nNODE_ENV=production\n`; fs.writeFileSync('.env', env);"
 
       - name: Install dependencies
         run: npm ci
