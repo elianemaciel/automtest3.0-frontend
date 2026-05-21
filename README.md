@@ -14,6 +14,29 @@ The application back-end can be found here: <https://github.com/JoandersonG/Auto
 Once the back-end is set up, it's possible to run `npm start` to run the front-end as well.
 
 ## Deploy
-npm run build  
-npx electron-builder -w
 
+Build Windows installer locally:
+
+```bash
+npm run package:win
+```
+
+Build Ubuntu/Linux packages locally:
+
+```bash
+npm run package:linux
+```
+
+The generated files are created in `release/build`.
+
+GitHub Releases are generated automatically when a version tag is pushed:
+
+```bash
+git tag frontend-v0.1.0
+git push origin frontend-v0.1.0
+```
+
+The release workflow builds:
+
+- Windows: `.exe`
+- Ubuntu/Linux: `.AppImage` and `.deb`

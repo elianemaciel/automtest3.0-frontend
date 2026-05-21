@@ -1,12 +1,11 @@
 {
-  "name": "electron-react-boilerplate",
-  "version": "3.0.0",
-  "description": "A foundation for scalable desktop apps",
+  "name": "autom-test-frontend",
+  "version": "4.0.0",
+  "description": "AutomTest - Frontend",
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://github.com/electron-react-boilerplate"
+    "name": "AutomTest",
+    "email": "elianemaciel@users.noreply.github.com"
   },
   "main": "./dist/main/main.js",
   "scripts": {

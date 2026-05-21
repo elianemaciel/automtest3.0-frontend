@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "frontend-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            os: windows-latest
+            command: npm run release:win
+            artifact: |
+              release/build/*.exe
+              release/build/*.blockmap
+              release/build/*.yml
+          - name: Ubuntu
+            os: ubuntu-latest
+            command: npm run release:linux
+            artifact: |
+              release/build/*.AppImage
+              release/build/*.deb
+              release/build/*.blockmap
+              release/build/*.yml
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ${{ matrix.command }}
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: automtest-${{ matrix.name }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: warn
