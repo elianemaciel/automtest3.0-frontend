@@ -61,7 +61,10 @@ export default function EquivClassList(props: {methods: Method[], onRemove: any,
         setAvaliableMethods(ms => ms ? ms.map(m_ => {
             console.log('m_', m_)
             if (m_ && m_.identifier == methodId) {
-                m_.equivClasses = m_.equivClasses.filter(eqc => eqc.identifier != eqClassId)
+                return {
+                    ...m_,
+                    equivClasses: (m_.equivClasses || []).filter(eqc => eqc.identifier != eqClassId)
+                }
             }
             return m_
         }) : [])

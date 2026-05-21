@@ -1,8 +1,8 @@
 {
-  "description": "AutomTest 3.0 - Frontend",
+  "description": "AutomTest - Frontend",
   "name": "autom-test-frontend",
-  "productName": "AutomTest 3.0 - Frontend",
-  "version": "0.1.0",
+  "productName": "AutomTest - Frontend",
+  "version": "4.0.0",
   "keywords": [
     "electron",
     "boilerplate",
@@ -14,19 +14,18 @@
     "hot",
     "reload"
   ],
-  "homepage": "https://github.com/electron-react-boilerplate/electron-react-boilerplate#readme",
+  "homepage": "https://github.com/elianemaciel/automtest3.0-frontend#readme",
   "bugs": {
-    "url": "https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues"
+    "url": "https://github.com/elianemaciel/automtest3.0-frontend/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/electron-react-boilerplate/electron-react-boilerplate.git"
+    "url": "git+https://github.com/elianemaciel/automtest3.0-frontend.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://electron-react-boilerplate.js.org"
+    "name": "AutomTest",
+    "email": "elianemaciel@users.noreply.github.com"
   },
   "contributors": [
     {
@@ -44,6 +43,10 @@
     "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
+    "package:win": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder --win nsis --x64 --publish never && npm run build:dll",
+    "package:linux": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder --linux AppImage deb --x64 --publish never && npm run build:dll",
+    "release:win": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder --win nsis --x64 --publish always",
+    "release:linux": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder --linux AppImage deb --x64 --publish always",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run start:renderer",
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
@@ -234,9 +237,11 @@
     },
     "linux": {
       "target": [
-        "AppImage"
+        "AppImage",
+        "deb"
       ],
-      "category": "Development"
+      "category": "Development",
+      "maintainer": "AutomTest <elianemaciel@users.noreply.github.com>"
     },
     "directories": {
       "app": "release/app",
@@ -248,8 +253,8 @@
     ],
     "publish": {
       "provider": "github",
-      "owner": "electron-react-boilerplate",
-      "repo": "electron-react-boilerplate"
+      "owner": "elianemaciel",
+      "repo": "automtest3.0-frontend"
     }
   },
   "collective": {

@@ -1,28 +1,36 @@
-/* eslint-disable */
 import { Button, CircularProgress } from '@mui/material';
 import {
   RadioButton,
   RadioGroup,
   Stack,
-  Text3,
   Text1,
+  Text3,
   Text5,
-  Text2,
 } from '@telefonica/mistica';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { v1 as uuidv1 } from 'uuid';
 import ValidationErrorSnackbar from './ValidationErrorComponent';
+import { API_BASE_URL } from '../config/api';
 
 export default function UserStoryContent(props: {
   setMethods: any;
   showMethodsListContent: any;
   userStory: string;
   setUserStory: any;
+  selectedIA: string;
+  setSelectedIA: any;
 }) {
-  const [userStory, setUserStory] = useState(props.userStory);
+  const {
+    setMethods,
+    showMethodsListContent,
+    userStory: initialUserStory,
+    setUserStory: setParentUserStory,
+    selectedIA,
+    setSelectedIA,
+  } = props;
+  const [userStory, setUserStory] = useState(initialUserStory);
   const [language, setLanguage] = useState('pt');
-  const [selectedIA, setSelectedIA] = useState('gemini');
   const [isLoading, setIsLoading] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -31,13 +39,13 @@ export default function UserStoryContent(props: {
   const [validationErrorMsg, setValidationErrorMsg] = useState('');
 
   useEffect(() => {
-    props.setUserStory(userStory);
-  }, [userStory]);
+    setParentUserStory(userStory);
+  }, [setParentUserStory, userStory]);
 
   // const showValidationSnackbar = ValidationErrorSnackbar
 
   function validateUserStory() {
-    const isValid = userStory != '';
+    const isValid = userStory !== '';
 
     if (!isValid) {
       setShowValidationError(true);
@@ -50,46 +58,45 @@ export default function UserStoryContent(props: {
   }
 
   function generateMethods(userStory: string, language: string) {
-  console.log('Generating methods...');
+    console.log('Generating methods...');
 
-  axios
-    .post('http://127.0.0.1:5000/api/process_user_story', {
-      lang: language,
-      userStory,
-      selectedIA,
-    })
-    .then((response) => {
-      console.log('response=', response.data);
+    axios
+      .post(`${API_BASE_URL}/api/process_user_story`, {
+        lang: language,
+        userStory,
+        selectedIA,
+      })
+      .then((response) => {
+        console.log('response=', response.data);
 
-      const convertedMethods = response.data.map((item: any) => ({
-        identifier: uuidv1(),
-        name: item.nome,
-        className: item.nomeClasse,
-        returnType: item.tipoRetorno,
-        equivClasses: [],
-        parameters: item.parametros.map((p: any) => ({
+        const convertedMethods = response.data.map((item: any) => ({
           identifier: uuidv1(),
-          name: p.nome,
-          type: p.tipo,
-        })),
-      }));
+          name: item.nome,
+          className: item.nomeClasse,
+          returnType: item.tipoRetorno,
+          equivClasses: [],
+          parameters: item.parametros.map((p: any) => ({
+            identifier: uuidv1(),
+            name: p.nome,
+            type: p.tipo,
+          })),
+        }));
 
-      props.setMethods(convertedMethods);
-      setIsLoading(false);
-      props.showMethodsListContent();
-    })
-    .catch((error) => {
-      setIsLoading(false);
-      setShowError(true);
-      setErrorMessage(
-        `${error.code}: ${
-          error.response?.data ? error.response.data : error.message
-        }`,
-      );
-      console.error('Error fetching data:', error);
-    });
-}
-
+        setMethods(convertedMethods);
+        setIsLoading(false);
+        showMethodsListContent();
+      })
+      .catch((error) => {
+        setIsLoading(false);
+        setShowError(true);
+        setErrorMessage(
+          `${error.code}: ${
+            error.response?.data ? error.response.data : error.message
+          }`,
+        );
+        console.error('Error fetching data:', error);
+      });
+  }
 
   return (
     <div style={{ width: '100%', color: 'white' }}>
@@ -122,7 +129,7 @@ export default function UserStoryContent(props: {
           }}
         >
           <div style={{ color: 'black' }}>
-            A error occurred while requesting AutomTest's backend:
+            A error occurred while requesting AutomTest&apos;s backend:
             <br />
             <br />
             <br />
@@ -170,16 +177,16 @@ export default function UserStoryContent(props: {
             >
               <div style={{ marginInlineEnd: '24px' }}>
                 <RadioButton value="pt">
-                  <Text2 regular color="black">
+                  <Text3 regular color="black">
                     Português
-                  </Text2>
+                  </Text3>
                 </RadioButton>
               </div>
               <div>
                 <RadioButton value="en">
-                  <Text2 regular color="black">
+                  <Text3 regular color="black">
                     English
-                  </Text2>
+                  </Text3>
                 </RadioButton>
               </div>
             </RadioGroup>
@@ -197,7 +204,7 @@ export default function UserStoryContent(props: {
               <RadioGroup
                 name="radio-ia"
                 onChange={setSelectedIA}
-                defaultValue="gemini"
+                defaultValue={selectedIA}
               >
                 <div
                   style={{
@@ -219,19 +226,9 @@ export default function UserStoryContent(props: {
                       ChatGPT
                     </Text1>
                   </RadioButton>
-                  <RadioButton value="llama">
-                    <Text1 regular color="black">
-                      LLaMA
-                    </Text1>
-                  </RadioButton>
                   <RadioButton value="deepseek">
                     <Text1 regular color="black">
                       DeepSeek
-                    </Text1>
-                  </RadioButton>
-                  <RadioButton value="groq">
-                    <Text1 regular color="black">
-                      Groq
                     </Text1>
                   </RadioButton>
                 </div>

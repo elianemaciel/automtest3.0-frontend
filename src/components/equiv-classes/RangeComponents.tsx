@@ -114,19 +114,27 @@ export function DateRangeComponent(props: {range: DataRange, setRange: any, labe
     const [fromDate, setFromDate] = useState<Dayjs>();
     const [toDate, setToDate] = useState<Dayjs>();
 
+    function parseRangeDate(value: string) {
+        if (!value) return undefined;
+
+        const dateParts = value.split("-").map(Number);
+
+        if (/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) {
+            return dayjs(value);
+        }
+
+        if (/^[0-9]{2}-[0-9]{2}-[0-9]{4}$/.test(value)) {
+            const [day, month, year] = dateParts;
+            return dayjs(`${year}-${month}-${day}`);
+        }
+
+        return undefined;
+    }
+
     useEffect(() => {
-        console.log('DateRangeComponent.props.range', props.range)
-        if (props.range.v1) {
-            const [day, month, year] = props.range.v1.split("-").map(Number);
-            const formattedDate = dayjs(`${year}-${month}-${day}`);
-            setFromDate(formattedDate);
-        }
-        if (props.range.v2) {
-            const [day, month, year] = props.range.v2.split("-").map(Number);
-            const formattedDate = dayjs(`${year}-${month}-${day}`);
-            setToDate(formattedDate);
-        }
-    }, [])
+        setFromDate(parseRangeDate(props.range.v1));
+        setToDate(parseRangeDate(props.range.v2));
+    }, [props.range.v1, props.range.v2])
 
     const {openSnackbar} = useSnackbar();
 
@@ -135,6 +143,10 @@ export function DateRangeComponent(props: {range: DataRange, setRange: any, labe
         //openSnackbar({message: '"From" shloud be a date befor or equal to value in "To"', type: 'CRITICAL', buttonText: 'buttonText', withDismiss: true});
 
         // console.log('updating date. type='+ type, ' value=', value)
+        if (!value) {
+            return;
+        }
+
         if (type.trim() == 'from') {
             setFromDate(value)
             props.setRange({...props.range, v1: value.format('DD-MM-YYYY')})
