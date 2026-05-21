@@ -4,14 +4,12 @@ on:
   push:
     tags:
       - "automtest-v*"
-      - "frontend-v*"
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  build:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
@@ -70,7 +68,28 @@ jobs:
           path: ${{ matrix.artifact }}
           if-no-files-found: warn
 
-      - name: Publish GitHub Release
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          pattern: automtest-*
+          merge-multiple: true
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.artifact }}
+          tag_name: ${{ github.ref_name }}
+          files: |
+            release-artifacts/**/*.exe
+            release-artifacts/**/*.blockmap
+            release-artifacts/**/*.yml
+            release-artifacts/**/*.AppImage
+            release-artifacts/**/*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
