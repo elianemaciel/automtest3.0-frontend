@@ -113,13 +113,21 @@ export default function GenerateTestsContent(props: {
       ...method,
       equivClasses: method.equivClasses || [],
     }));
-    const equivalenceClasses = methodsWithEquivalenceClasses.flatMap((method) =>
-      method.equivClasses.map((equivClass) => ({
-        ...equivClass,
-        methodIdentifier: method.identifier,
-        methodName: method.name,
-      })),
-    );
+    const equivalenceClasses = methodsWithEquivalenceClasses.flatMap((method) => {
+  if (!method.equivClasses.length) {
+    return [{
+      methodIdentifier: method.identifier,
+      methodName: method.name,
+      equivalenceClass: null,
+    }];
+  }
+
+  return method.equivClasses.map((equivClass) => ({
+    ...equivClass,
+    methodIdentifier: method.identifier,
+    methodName: method.name,
+  }));
+});
 
     if (equivalenceClasses.length === 0) {
       setGenResult('Please provide at least one Equivalence Class');
