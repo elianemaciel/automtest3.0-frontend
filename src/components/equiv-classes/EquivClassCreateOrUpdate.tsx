@@ -674,12 +674,6 @@ export default function EquivClassCreateOrUpdate(props: {
                 setShowValidationError(true);
                 setValidationErrorMsg('Please provide a valid return');
               } else if (
-                currentMethod.returnType.toLowerCase() === 'char' &&
-                !/^(.(;.)*)$/.test(returnValue.v1)
-              ) {
-                setShowValidationError(true);
-                setValidationErrorMsg('Please provide a valid return');
-              } else if (
                 currentMethod.returnType.toLowerCase() === 'date' &&
                 !(
                   /^[0-9]{2}-[0-9]{2}-[0-9]{4}$/.test(returnValue.v1) &&
